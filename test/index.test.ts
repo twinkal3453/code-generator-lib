@@ -5,7 +5,7 @@ describe('Barcode and QR Generator', () => {
   describe('generateQR', () => {
     it('should generate a QR code data URL by default', async () => {
       const result = await generateQR('https://example.com');
-      expect(result).toMatch(/^data:image\/png;base64,/);
+      expect(result).toMatch(/^data:image\/svg\+xml;base64,/);
     });
 
     it('should generate an SVG string when requested', async () => {

@@ -14,7 +14,7 @@ export interface QROptions {
     };
 }
 /**
- * Generates a QR Code from the given text.
+ * Generates a QR Code from the given text without external dependencies.
  * @param text The text or URL to encode.
  * @param options Options for formatting the QR Code.
  * @returns A promise that resolves to an SVG string or Data URL.
