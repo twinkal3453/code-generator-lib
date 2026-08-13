@@ -41,6 +41,18 @@ const START_B = 104;
 const STOP = 106;
 
 /**
+ * Escapes special characters for HTML/SVG to prevent XSS.
+ */
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * Generates a Barcode from the given text without external dependencies.
  * @param text The string to encode (ASCII 32-127).
  * @param options Options for formatting the Barcode.
@@ -51,7 +63,20 @@ export async function generateBarcode(text: string, options: BarcodeOptions = {}
     type = 'dataUrl',
     height = 50,
     scale = 2
-  } = options;
+  } = options || {};
+
+  if (!text || typeof text !== 'string') {
+    throw new Error('Input text must be a valid string');
+  }
+  if (text.length > 1000) {
+    throw new Error('Input text is too long (maximum 1000 characters)');
+  }
+  if (typeof height !== 'number' || height < 1 || height > 10000) {
+    throw new Error('Height must be a number between 1 and 10000');
+  }
+  if (typeof scale !== 'number' || scale < 1 || scale > 100) {
+    throw new Error('Scale must be a number between 1 and 100');
+  }
 
   const values: number[] = [];
 
@@ -102,7 +127,8 @@ export async function generateBarcode(text: string, options: BarcodeOptions = {}
 
   // Optional: Add human readable text below barcode
   const textY = padding + height + padding * 1.2;
-  svg += `<text x="${fullWidth / 2}" y="${textY}" font-family="monospace" font-size="${padding}" text-anchor="middle" fill="#000000">${text}</text>`;
+  const safeText = escapeHtml(text);
+  svg += `<text x="${fullWidth / 2}" y="${textY}" font-family="monospace" font-size="${padding}" text-anchor="middle" fill="#000000">${safeText}</text>`;
 
   svg += `</svg>`;
 

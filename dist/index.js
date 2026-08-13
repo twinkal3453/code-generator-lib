@@ -758,6 +758,9 @@ var qrcodegen;
 })(qrcodegen || (qrcodegen = {}));
 
 // src/qr.ts
+function escapeHtml(unsafe) {
+  return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
 async function generateQR(text, options = {}) {
   const {
     type = "dataUrl",
@@ -765,7 +768,19 @@ async function generateQR(text, options = {}) {
     margin = 4,
     errorCorrectionLevel = "M",
     color = { dark: "#000000", light: "#ffffff" }
-  } = options;
+  } = options || {};
+  if (!text || typeof text !== "string") {
+    throw new Error("Input text must be a valid string");
+  }
+  if (text.length > 2e3) {
+    throw new Error("Input text is too long (maximum 2000 characters)");
+  }
+  if (typeof width !== "number" || width < 10 || width > 1e4) {
+    throw new Error("Width must be a number between 10 and 10000");
+  }
+  if (typeof margin !== "number" || margin < 0 || margin > 1e3) {
+    throw new Error("Margin must be a number between 0 and 1000");
+  }
   let ecl = qrcodegen.QrCode.Ecc.MEDIUM;
   if (errorCorrectionLevel === "L") ecl = qrcodegen.QrCode.Ecc.LOW;
   if (errorCorrectionLevel === "Q") ecl = qrcodegen.QrCode.Ecc.QUARTILE;
@@ -774,8 +789,10 @@ async function generateQR(text, options = {}) {
   const size = qr.size;
   const viewBox = size + margin * 2;
   const scale = width / viewBox;
+  const safeLightColor = escapeHtml(color && color.light || "#ffffff");
+  const safeDarkColor = escapeHtml(color && color.dark || "#000000");
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${width}" viewBox="0 0 ${viewBox} ${viewBox}">`;
-  svg += `<rect width="100%" height="100%" fill="${color.light}" />`;
+  svg += `<rect width="100%" height="100%" fill="${safeLightColor}" />`;
   let pathData = "";
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
@@ -784,7 +801,7 @@ async function generateQR(text, options = {}) {
       }
     }
   }
-  svg += `<path d="${pathData}" fill="${color.dark}" />`;
+  svg += `<path d="${pathData}" fill="${safeDarkColor}" />`;
   svg += `</svg>`;
   if (type === "svg") {
     return svg;
@@ -906,12 +923,27 @@ var BARS = [
 ];
 var START_B = 104;
 var STOP = 106;
+function escapeHtml2(unsafe) {
+  return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
 async function generateBarcode(text, options = {}) {
   const {
     type = "dataUrl",
     height = 50,
     scale = 2
-  } = options;
+  } = options || {};
+  if (!text || typeof text !== "string") {
+    throw new Error("Input text must be a valid string");
+  }
+  if (text.length > 1e3) {
+    throw new Error("Input text is too long (maximum 1000 characters)");
+  }
+  if (typeof height !== "number" || height < 1 || height > 1e4) {
+    throw new Error("Height must be a number between 1 and 10000");
+  }
+  if (typeof scale !== "number" || scale < 1 || scale > 100) {
+    throw new Error("Scale must be a number between 1 and 100");
+  }
   const values = [];
   values.push(START_B);
   let checksum = START_B;
@@ -945,7 +977,8 @@ async function generateBarcode(text, options = {}) {
     }
   }
   const textY = padding + height + padding * 1.2;
-  svg += `<text x="${fullWidth / 2}" y="${textY}" font-family="monospace" font-size="${padding}" text-anchor="middle" fill="#000000">${text}</text>`;
+  const safeText = escapeHtml2(text);
+  svg += `<text x="${fullWidth / 2}" y="${textY}" font-family="monospace" font-size="${padding}" text-anchor="middle" fill="#000000">${safeText}</text>`;
   svg += `</svg>`;
   if (type === "svg") {
     return svg;

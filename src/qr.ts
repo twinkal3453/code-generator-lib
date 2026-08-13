@@ -19,6 +19,18 @@ export interface QROptions {
 }
 
 /**
+ * Escapes special characters for HTML/SVG to prevent XSS.
+ */
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * Generates a QR Code from the given text without external dependencies.
  * @param text The text or URL to encode.
  * @param options Options for formatting the QR Code.
@@ -31,7 +43,20 @@ export async function generateQR(text: string, options: QROptions = {}): Promise
     margin = 4, 
     errorCorrectionLevel = 'M', 
     color = { dark: '#000000', light: '#ffffff' } 
-  } = options;
+  } = options || {};
+
+  if (!text || typeof text !== 'string') {
+    throw new Error('Input text must be a valid string');
+  }
+  if (text.length > 2000) {
+    throw new Error('Input text is too long (maximum 2000 characters)');
+  }
+  if (typeof width !== 'number' || width < 10 || width > 10000) {
+    throw new Error('Width must be a number between 10 and 10000');
+  }
+  if (typeof margin !== 'number' || margin < 0 || margin > 1000) {
+    throw new Error('Margin must be a number between 0 and 1000');
+  }
 
   let ecl = qrcodegen.QrCode.Ecc.MEDIUM;
   if (errorCorrectionLevel === 'L') ecl = qrcodegen.QrCode.Ecc.LOW;
@@ -44,8 +69,11 @@ export async function generateQR(text: string, options: QROptions = {}): Promise
   const viewBox = size + margin * 2;
   const scale = width / viewBox;
 
+  const safeLightColor = escapeHtml((color && color.light) || '#ffffff');
+  const safeDarkColor = escapeHtml((color && color.dark) || '#000000');
+
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${width}" viewBox="0 0 ${viewBox} ${viewBox}">`;
-  svg += `<rect width="100%" height="100%" fill="${color.light}" />`;
+  svg += `<rect width="100%" height="100%" fill="${safeLightColor}" />`;
   
   let pathData = "";
   for (let y = 0; y < size; y++) {
@@ -56,7 +84,7 @@ export async function generateQR(text: string, options: QROptions = {}): Promise
     }
   }
   
-  svg += `<path d="${pathData}" fill="${color.dark}" />`;
+  svg += `<path d="${pathData}" fill="${safeDarkColor}" />`;
   svg += `</svg>`;
 
   if (type === 'svg') {
