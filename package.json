@@ -1,6 +1,6 @@
 {
   "name": "code-generator-library",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "files": [
     "dist",
     "README.md"
@@ -21,17 +21,33 @@
     "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "barcode",
-    "qrcode",
-    "generator",
     "qr",
-    "bar",
-    "code",
+    "qrcode",
+    "qr-code",
+    "qr-code-generator",
+    "barcode",
+    "barcode-generator",
+    "code128",
+    "code-128",
+    "code-128-barcode",
+    "svg-qr-code",
+    "svg-barcode",
+    "qr-generator",
+    "barcode-library",
+    "qr-library",
+    "bar-code",
     "svg",
     "base64",
     "zero-dependency",
     "universal",
-    "pure"
+    "pure",
+    "typescript",
+    "javascript",
+    "nodejs",
+    "browser",
+    "react",
+    "nextjs",
+    "vue"
   ],
   "author": "Twinkal K Raj",
   "license": "ISC",
