@@ -1,4 +1,4 @@
-# code-generator-lib
+# code-generator-library
 
 A zero-dependency, incredibly lightweight npm library for generating QR Codes and Code 128 Barcodes. 
 
@@ -7,7 +7,7 @@ Because this library is 100% dependency-free, it is exceptionally fast, small, a
 ## Installation
 
 ```bash
-npm install code-generator-lib
+npm install code-generator-library
 ```
 
 ## Usage
@@ -19,7 +19,7 @@ You can import the library using ES Modules (`import`) or CommonJS (`require`).
 Generate QR codes easily and get the output as a Base64 SVG Data URI (perfect for `<img>` tags) or a pure SVG string.
 
 ```typescript
-import { generateQR } from 'code-generator-lib';
+import { generateQR } from 'code-generator-library';
 
 async function main() {
   // 1. Generate as a Data URI (Base64 SVG - Default)
@@ -37,7 +37,7 @@ async function main() {
 Generate Code 128 (Set B) barcodes. 
 
 ```typescript
-import { generateBarcode } from 'code-generator-lib';
+import { generateBarcode } from 'code-generator-library';
 
 async function main() {
   // 1. Generate as a Data URI (Base64 SVG)

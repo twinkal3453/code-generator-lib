@@ -1,6 +1,6 @@
 {
-  "name": "code-generator-lib",
-  "version": "1.0.3",
+  "name": "code-generator-library",
+  "version": "1.0.1",
   "files": [
     "dist",
     "README.md"
