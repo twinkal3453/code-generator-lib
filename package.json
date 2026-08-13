@@ -1,6 +1,6 @@
 {
   "name": "code-generator-library",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "files": [
     "dist",
     "README.md"
@@ -36,6 +36,14 @@
   "author": "Twinkal K Raj",
   "license": "ISC",
   "description": "A zero-dependency universal npm library for generating Code 128 Barcodes and QR Codes as SVG strings or Base64 Data URIs.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/twinkal3453/code-generator-lib.git"
+  },
+  "bugs": {
+    "url": "https://github.com/twinkal3453/code-generator-lib/issues"
+  },
+  "homepage": "https://github.com/twinkal3453/code-generator-lib#readme",
   "devDependencies": {
     "@types/node": "^26.1.2",
     "tsup": "^8.5.1",
