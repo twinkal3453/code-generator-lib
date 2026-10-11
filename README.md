@@ -4,15 +4,29 @@
 [![license](https://img.shields.io/npm/l/code-generator-library.svg)](https://github.com/twinkal3453/code-generator-lib/blob/main/LICENSE)
 [![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](https://www.npmjs.com/package/code-generator-library)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.npmjs.com/package/code-generator-library)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Code%20Studio-8a2be2.svg?style=flat&logo=vercel)](https://codestudio-kappa.vercel.app/)
 
 > **Ultra-fast, 100% Zero-Dependency QR Code & Code 128 Barcode Generator for JavaScript & TypeScript.**  
 > Effortlessly generate high-resolution QR codes and barcodes as **SVG strings** or **Base64 Data URIs** in both **Node.js** and **Browser** environments out of the box.
 
 ---
 
+## 🌐 Live Interactive Demo
+
+Try out the library live without installing anything! Visit the interactive playground to generate, customize, test, and export QR codes and barcodes directly in your browser:
+
+👉 **[https://codestudio-kappa.vercel.app/](https://codestudio-kappa.vercel.app/)**
+
+- 🔲 **QR Code Generator**: Test custom error correction levels (`L`, `M`, `Q`, `H`), dimensions, quiet zone margins, and foreground/background colors with live visual preview.
+- 📊 **Code 128 Barcode Generator**: Validate ASCII characters, tune bar heights and scale multipliers in real time.
+- 💾 **Instant Exports**: Download as vector SVG, high-resolution PNG, copy SVG markup, or print labels directly.
+
+---
+
 ## ⚡ Features
 
 - 🚀 **100% Zero Dependencies**: Lightweight, secure, and blazingly fast. No heavy native canvas or native binary dependencies.
+- 🌐 **Interactive Web Playground**: Generate and test codes live at [codestudio-kappa.vercel.app](https://codestudio-kappa.vercel.app/).
 - 📦 **Universal / Cross-Platform**: Runs seamlessly in **Node.js**, **Browsers**, **React**, **Next.js**, **Vue**, **Angular**, **Svelte**, and **React Native**.
 - 🔲 **QR Code Generator**: Creates customizable QR codes with custom error correction levels (`L`, `M`, `Q`, `H`), colors, sizes, and margins.
 - 📊 **Code 128 Barcode Generator**: Generates crisp, standard Code 128 (Set B) barcodes for inventory, logistics, labels, and products.
@@ -151,6 +165,7 @@ app.get('/api/barcode', async (req, res) => {
 
 ## 🌐 Compatibility & Keywords
 
+- **Live Playground**: [https://codestudio-kappa.vercel.app/](https://codestudio-kappa.vercel.app/)
 - **Frameworks**: React, Next.js, Vue, Nuxt, Angular, Svelte, Express, Fastify, NestJS, Vite, Webpack.
 - **Environments**: Node.js, Deno, Bun, Cloudflare Workers, Vercel Edge Functions, Browser JS.
 - **Search Keywords**: qr code generator, barcode generator, code 128 barcode, svg qr code, base64 qr code, javascript qr code library, typescript barcode library, zero dependency qr code, zero dependency barcode generator.
