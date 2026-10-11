@@ -1,4 +1,4 @@
-declare var Buffer: any;
+import { escapeXml, toBase64 } from './utils';
 
 export interface BarcodeOptions {
   /** The barcode format (currently only supports 'code128') */
@@ -41,18 +41,6 @@ const START_B = 104;
 const STOP = 106;
 
 /**
- * Escapes special characters for HTML/SVG to prevent XSS.
- */
-function escapeHtml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-/**
  * Generates a Barcode from the given text without external dependencies.
  * @param text The string to encode (ASCII 32-127).
  * @param options Options for formatting the Barcode.
@@ -60,24 +48,33 @@ function escapeHtml(unsafe: string): string {
  */
 export async function generateBarcode(text: string, options: BarcodeOptions = {}): Promise<string> {
   const {
+    format = 'code128',
     type = 'dataUrl',
     height = 50,
     scale = 2
   } = options || {};
 
-  if (!text || typeof text !== 'string') {
-    throw new Error('Input text must be a valid string');
+  if (typeof text !== 'string' || text.length === 0) {
+    throw new Error('Input text must be a non-empty string');
   }
   if (text.length > 1000) {
     throw new Error('Input text is too long (maximum 1000 characters)');
   }
-  if (typeof height !== 'number' || height < 1 || height > 10000) {
-    throw new Error('Height must be a number between 1 and 10000');
+  if (typeof height !== 'number' || !Number.isFinite(height) || height < 1 || height > 10000) {
+    throw new Error('Height must be a valid number between 1 and 10000');
   }
-  if (typeof scale !== 'number' || scale < 1 || scale > 100) {
-    throw new Error('Scale must be a number between 1 and 100');
+  if (typeof scale !== 'number' || !Number.isFinite(scale) || scale < 1 || scale > 100) {
+    throw new Error('Scale must be a valid number between 1 and 100');
+  }
+  if (format && format !== 'code128') {
+    throw new Error('Unsupported barcode format: only "code128" is currently supported');
+  }
+  if (type !== 'svg' && type !== 'dataUrl') {
+    throw new Error('Invalid output type: must be "svg" or "dataUrl"');
   }
 
+  const safeScale = Math.floor(scale);
+  const safeHeight = Math.floor(height);
   const values: number[] = [];
 
   // 1. Start Code B
@@ -88,7 +85,7 @@ export async function generateBarcode(text: string, options: BarcodeOptions = {}
   for (let i = 0; i < text.length; i++) {
     const charCode = text.charCodeAt(i);
     if (charCode < 32 || charCode > 127) {
-      throw new Error(`Invalid character for Code 128 Set B: ${text[i]}`);
+      throw new Error(`Invalid character for Code 128 Set B at index ${i}: charCode ${charCode}`);
     }
     const value = charCode - 32;
     values.push(value);
@@ -109,25 +106,25 @@ export async function generateBarcode(text: string, options: BarcodeOptions = {}
   }
 
   // Generate SVG
-  const width = binaryString.length * scale;
-  const padding = scale * 10;
+  const width = binaryString.length * safeScale;
+  const padding = safeScale * 10;
   const textHeight = padding * 1.5; // Space for text and gap
   const fullWidth = width + padding * 2;
-  const fullHeight = height + padding * 2 + textHeight;
+  const fullHeight = safeHeight + padding * 2 + textHeight;
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${fullWidth}" height="${fullHeight}">`;
   svg += `<rect width="100%" height="100%" fill="#ffffff" />`;
 
   for (let i = 0; i < binaryString.length; i++) {
     if (binaryString[i] === '1') {
-      const x = padding + (i * scale);
-      svg += `<rect x="${x}" y="${padding}" width="${scale}" height="${height}" fill="#000000" />`;
+      const x = padding + (i * safeScale);
+      svg += `<rect x="${x}" y="${padding}" width="${safeScale}" height="${safeHeight}" fill="#000000" />`;
     }
   }
 
-  // Optional: Add human readable text below barcode
-  const textY = padding + height + padding * 1.2;
-  const safeText = escapeHtml(text);
+  // Add human readable text below barcode
+  const textY = padding + safeHeight + padding * 1.2;
+  const safeText = escapeXml(text);
   svg += `<text x="${fullWidth / 2}" y="${textY}" font-family="monospace" font-size="${padding}" text-anchor="middle" fill="#000000">${safeText}</text>`;
 
   svg += `</svg>`;
@@ -135,9 +132,7 @@ export async function generateBarcode(text: string, options: BarcodeOptions = {}
   if (type === 'svg') {
     return svg;
   } else {
-    const base64Svg = typeof Buffer !== 'undefined'
-      ? Buffer.from(svg).toString('base64')
-      : btoa(unescape(encodeURIComponent(svg)));
-    return `data:image/svg+xml;base64,${base64Svg}`;
+    return `data:image/svg+xml;base64,${toBase64(svg)}`;
   }
 }
+

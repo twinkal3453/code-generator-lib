@@ -20,8 +20,11 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  escapeXml: () => escapeXml,
   generateBarcode: () => generateBarcode,
-  generateQR: () => generateQR
+  generateQR: () => generateQR,
+  isValidColor: () => isValidColor,
+  toBase64: () => toBase64
 });
 module.exports = __toCommonJS(index_exports);
 
@@ -757,10 +760,216 @@ var qrcodegen;
   })(QrSegment = qrcodegen2.QrSegment || (qrcodegen2.QrSegment = {}));
 })(qrcodegen || (qrcodegen = {}));
 
-// src/qr.ts
-function escapeHtml(unsafe) {
+// src/utils.ts
+var SAFE_NAMED_COLORS = /* @__PURE__ */ new Set([
+  "aliceblue",
+  "antiquewhite",
+  "aqua",
+  "aquamarine",
+  "azure",
+  "beige",
+  "bisque",
+  "black",
+  "blanchedalmond",
+  "blue",
+  "blueviolet",
+  "brown",
+  "burlywood",
+  "cadetblue",
+  "chartreuse",
+  "chocolate",
+  "coral",
+  "cornflowerblue",
+  "cornsilk",
+  "crimson",
+  "cyan",
+  "darkblue",
+  "darkcyan",
+  "darkgoldenrod",
+  "darkgray",
+  "darkgreen",
+  "darkgrey",
+  "darkkhaki",
+  "darkmagenta",
+  "darkolivegreen",
+  "darkorange",
+  "darkorchid",
+  "darkred",
+  "darksalmon",
+  "darkseagreen",
+  "darkslateblue",
+  "darkslategray",
+  "darkslategrey",
+  "darkturquoise",
+  "darkviolet",
+  "deeppink",
+  "deepskyblue",
+  "dimgray",
+  "dimgrey",
+  "dodgerblue",
+  "firebrick",
+  "floralwhite",
+  "forestgreen",
+  "fuchsia",
+  "gainsboro",
+  "ghostwhite",
+  "gold",
+  "goldenrod",
+  "gray",
+  "green",
+  "greenyellow",
+  "grey",
+  "honeydew",
+  "hotpink",
+  "indianred",
+  "indigo",
+  "ivory",
+  "khaki",
+  "lavender",
+  "lavenderblush",
+  "lawngreen",
+  "lemonchiffon",
+  "lightblue",
+  "lightcoral",
+  "lightcyan",
+  "lightgoldenrodyellow",
+  "lightgray",
+  "lightgreen",
+  "lightgrey",
+  "lightpink",
+  "lightsalmon",
+  "lightseagreen",
+  "lightskyblue",
+  "lightslategray",
+  "lightslategrey",
+  "lightsteelblue",
+  "lightyellow",
+  "lime",
+  "limegreen",
+  "linen",
+  "magenta",
+  "maroon",
+  "mediumaquamarine",
+  "mediumblue",
+  "mediumorchid",
+  "mediumpurple",
+  "mediumseagreen",
+  "mediumslateblue",
+  "mediumspringgreen",
+  "mediumturquoise",
+  "mediumvioletred",
+  "midnightblue",
+  "mintcream",
+  "mistyrose",
+  "moccasin",
+  "navajowhite",
+  "navy",
+  "oldlace",
+  "olive",
+  "olivedrab",
+  "orange",
+  "orangered",
+  "orchid",
+  "palegoldenrod",
+  "palegreen",
+  "paleturquoise",
+  "palevioletred",
+  "papayawhip",
+  "peachpuff",
+  "peru",
+  "pink",
+  "plum",
+  "powderblue",
+  "purple",
+  "rebeccapurple",
+  "red",
+  "rosybrown",
+  "royalblue",
+  "saddlebrown",
+  "salmon",
+  "sandybrown",
+  "seagreen",
+  "seashell",
+  "sienna",
+  "silver",
+  "skyblue",
+  "slateblue",
+  "slategray",
+  "slategrey",
+  "snow",
+  "springgreen",
+  "steelblue",
+  "tan",
+  "teal",
+  "thistle",
+  "tomato",
+  "turquoise",
+  "violet",
+  "wheat",
+  "white",
+  "whitesmoke",
+  "yellow",
+  "yellowgreen",
+  "transparent",
+  "currentcolor"
+]);
+var HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+var RGB_COLOR_REGEX = /^rgba?\(\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?(?:\s*[,/]\s*[\d.]+%?)?\s*\)$/i;
+var HSL_COLOR_REGEX = /^hsla?\(\s*[\d.]+(?:deg|rad|turn)?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?(?:\s*[,/]\s*[\d.]+%?)?\s*\)$/i;
+function isValidColor(val) {
+  if (typeof val !== "string") return false;
+  const trimmed = val.trim().toLowerCase();
+  if (!trimmed || trimmed.length > 60) return false;
+  if (/[<>"'&;\\`]|url\s*\(|javascript:|expression|data:/i.test(trimmed)) {
+    return false;
+  }
+  if (HEX_COLOR_REGEX.test(trimmed)) return true;
+  if (RGB_COLOR_REGEX.test(trimmed)) return true;
+  if (HSL_COLOR_REGEX.test(trimmed)) return true;
+  return SAFE_NAMED_COLORS.has(trimmed);
+}
+function escapeXml(unsafe) {
+  if (typeof unsafe !== "string") return "";
   return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
+function toBase64(str) {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(str, "utf-8").toString("base64");
+  }
+  if (typeof btoa === "function") {
+    const bytes2 = new TextEncoder().encode(str);
+    let binary = "";
+    const len = bytes2.byteLength;
+    for (let i2 = 0; i2 < len; i2++) {
+      binary += String.fromCharCode(bytes2[i2]);
+    }
+    return btoa(binary);
+  }
+  const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  const bytes = new TextEncoder().encode(str);
+  let result = "";
+  let i = 0;
+  for (; i + 2 < bytes.length; i += 3) {
+    result += CHARS[bytes[i] >> 2];
+    result += CHARS[(bytes[i] & 3) << 4 | bytes[i + 1] >> 4];
+    result += CHARS[(bytes[i + 1] & 15) << 2 | bytes[i + 2] >> 6];
+    result += CHARS[bytes[i + 2] & 63];
+  }
+  if (i < bytes.length) {
+    result += CHARS[bytes[i] >> 2];
+    if (i + 1 === bytes.length) {
+      result += CHARS[(bytes[i] & 3) << 4];
+      result += "==";
+    } else {
+      result += CHARS[(bytes[i] & 3) << 4 | bytes[i + 1] >> 4];
+      result += CHARS[(bytes[i + 1] & 15) << 2];
+      result += "=";
+    }
+  }
+  return result;
+}
+
+// src/qr.ts
 async function generateQR(text, options = {}) {
   const {
     type = "dataUrl",
@@ -769,17 +978,31 @@ async function generateQR(text, options = {}) {
     errorCorrectionLevel = "M",
     color = { dark: "#000000", light: "#ffffff" }
   } = options || {};
-  if (!text || typeof text !== "string") {
-    throw new Error("Input text must be a valid string");
+  if (typeof text !== "string" || text.length === 0) {
+    throw new Error("Input text must be a non-empty string");
   }
   if (text.length > 2e3) {
     throw new Error("Input text is too long (maximum 2000 characters)");
   }
-  if (typeof width !== "number" || width < 10 || width > 1e4) {
-    throw new Error("Width must be a number between 10 and 10000");
+  if (typeof width !== "number" || !Number.isFinite(width) || width < 10 || width > 1e4) {
+    throw new Error("Width must be a valid number between 10 and 10000");
   }
-  if (typeof margin !== "number" || margin < 0 || margin > 1e3) {
-    throw new Error("Margin must be a number between 0 and 1000");
+  if (typeof margin !== "number" || !Number.isFinite(margin) || margin < 0 || margin > 1e3) {
+    throw new Error("Margin must be a valid number between 0 and 1000");
+  }
+  if (type !== "svg" && type !== "dataUrl") {
+    throw new Error('Invalid output type: must be "svg" or "dataUrl"');
+  }
+  if (errorCorrectionLevel && !["L", "M", "Q", "H"].includes(errorCorrectionLevel)) {
+    throw new Error('Invalid errorCorrectionLevel: must be "L", "M", "Q", or "H"');
+  }
+  const darkColor = color && color.dark != null ? color.dark : "#000000";
+  const lightColor = color && color.light != null ? color.light : "#ffffff";
+  if (!isValidColor(darkColor)) {
+    throw new Error(`Invalid dark color: "${darkColor}" is not a valid CSS color`);
+  }
+  if (!isValidColor(lightColor)) {
+    throw new Error(`Invalid light color: "${lightColor}" is not a valid CSS color`);
   }
   let ecl = qrcodegen.QrCode.Ecc.MEDIUM;
   if (errorCorrectionLevel === "L") ecl = qrcodegen.QrCode.Ecc.LOW;
@@ -787,27 +1010,24 @@ async function generateQR(text, options = {}) {
   if (errorCorrectionLevel === "H") ecl = qrcodegen.QrCode.Ecc.HIGH;
   const qr = qrcodegen.QrCode.encodeText(text, ecl);
   const size = qr.size;
-  const viewBox = size + margin * 2;
-  const scale = width / viewBox;
-  const safeLightColor = escapeHtml(color && color.light || "#ffffff");
-  const safeDarkColor = escapeHtml(color && color.dark || "#000000");
+  const safeMargin = Math.floor(margin);
+  const viewBox = size + safeMargin * 2;
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${width}" viewBox="0 0 ${viewBox} ${viewBox}">`;
-  svg += `<rect width="100%" height="100%" fill="${safeLightColor}" />`;
+  svg += `<rect width="100%" height="100%" fill="${lightColor}" />`;
   let pathData = "";
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       if (qr.getModule(x, y)) {
-        pathData += `M${x + margin},${y + margin} h1 v1 h-1 z `;
+        pathData += `M${x + safeMargin},${y + safeMargin} h1 v1 h-1 z `;
       }
     }
   }
-  svg += `<path d="${pathData}" fill="${safeDarkColor}" />`;
+  svg += `<path d="${pathData}" fill="${darkColor}" />`;
   svg += `</svg>`;
   if (type === "svg") {
     return svg;
   } else {
-    const base64Svg = typeof Buffer !== "undefined" ? Buffer.from(svg).toString("base64") : btoa(unescape(encodeURIComponent(svg)));
-    return `data:image/svg+xml;base64,${base64Svg}`;
+    return `data:image/svg+xml;base64,${toBase64(svg)}`;
   }
 }
 
@@ -923,34 +1143,40 @@ var BARS = [
 ];
 var START_B = 104;
 var STOP = 106;
-function escapeHtml2(unsafe) {
-  return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
 async function generateBarcode(text, options = {}) {
   const {
+    format = "code128",
     type = "dataUrl",
     height = 50,
     scale = 2
   } = options || {};
-  if (!text || typeof text !== "string") {
-    throw new Error("Input text must be a valid string");
+  if (typeof text !== "string" || text.length === 0) {
+    throw new Error("Input text must be a non-empty string");
   }
   if (text.length > 1e3) {
     throw new Error("Input text is too long (maximum 1000 characters)");
   }
-  if (typeof height !== "number" || height < 1 || height > 1e4) {
-    throw new Error("Height must be a number between 1 and 10000");
+  if (typeof height !== "number" || !Number.isFinite(height) || height < 1 || height > 1e4) {
+    throw new Error("Height must be a valid number between 1 and 10000");
   }
-  if (typeof scale !== "number" || scale < 1 || scale > 100) {
-    throw new Error("Scale must be a number between 1 and 100");
+  if (typeof scale !== "number" || !Number.isFinite(scale) || scale < 1 || scale > 100) {
+    throw new Error("Scale must be a valid number between 1 and 100");
   }
+  if (format && format !== "code128") {
+    throw new Error('Unsupported barcode format: only "code128" is currently supported');
+  }
+  if (type !== "svg" && type !== "dataUrl") {
+    throw new Error('Invalid output type: must be "svg" or "dataUrl"');
+  }
+  const safeScale = Math.floor(scale);
+  const safeHeight = Math.floor(height);
   const values = [];
   values.push(START_B);
   let checksum = START_B;
   for (let i = 0; i < text.length; i++) {
     const charCode = text.charCodeAt(i);
     if (charCode < 32 || charCode > 127) {
-      throw new Error(`Invalid character for Code 128 Set B: ${text[i]}`);
+      throw new Error(`Invalid character for Code 128 Set B at index ${i}: charCode ${charCode}`);
     }
     const value = charCode - 32;
     values.push(value);
@@ -963,33 +1189,35 @@ async function generateBarcode(text, options = {}) {
   for (const val of values) {
     binaryString += BARS[val];
   }
-  const width = binaryString.length * scale;
-  const padding = scale * 10;
+  const width = binaryString.length * safeScale;
+  const padding = safeScale * 10;
   const textHeight = padding * 1.5;
   const fullWidth = width + padding * 2;
-  const fullHeight = height + padding * 2 + textHeight;
+  const fullHeight = safeHeight + padding * 2 + textHeight;
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${fullWidth}" height="${fullHeight}">`;
   svg += `<rect width="100%" height="100%" fill="#ffffff" />`;
   for (let i = 0; i < binaryString.length; i++) {
     if (binaryString[i] === "1") {
-      const x = padding + i * scale;
-      svg += `<rect x="${x}" y="${padding}" width="${scale}" height="${height}" fill="#000000" />`;
+      const x = padding + i * safeScale;
+      svg += `<rect x="${x}" y="${padding}" width="${safeScale}" height="${safeHeight}" fill="#000000" />`;
     }
   }
-  const textY = padding + height + padding * 1.2;
-  const safeText = escapeHtml2(text);
+  const textY = padding + safeHeight + padding * 1.2;
+  const safeText = escapeXml(text);
   svg += `<text x="${fullWidth / 2}" y="${textY}" font-family="monospace" font-size="${padding}" text-anchor="middle" fill="#000000">${safeText}</text>`;
   svg += `</svg>`;
   if (type === "svg") {
     return svg;
   } else {
-    const base64Svg = typeof Buffer !== "undefined" ? Buffer.from(svg).toString("base64") : btoa(unescape(encodeURIComponent(svg)));
-    return `data:image/svg+xml;base64,${base64Svg}`;
+    return `data:image/svg+xml;base64,${toBase64(svg)}`;
   }
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  escapeXml,
   generateBarcode,
-  generateQR
+  generateQR,
+  isValidColor,
+  toBase64
 });
 //# sourceMappingURL=index.js.map
