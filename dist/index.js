@@ -72,7 +72,6 @@ var qrcodegen;
       this.mask = msk;
       this.applyMask(msk);
       this.drawFormatBits(msk);
-      this.isFunction = [];
     }
     version;
     errorCorrectionLevel;
@@ -155,7 +154,7 @@ var qrcodegen;
     // The modules of this QR Code (false = light, true = dark).
     // Immutable after constructor finishes. Accessed through getModule().
     modules = [];
-    // Indicates function modules that are not subjected to masking. Discarded when constructor finishes.
+    // Indicates function modules, retained so styled renderers can preserve detection patterns.
     isFunction = [];
     /*-- Accessor methods --*/
     // Returns the color of the module (pixel) at the given coordinates, which is false
@@ -163,6 +162,10 @@ var qrcodegen;
     // If the given coordinates are out of bounds, then false (light) is returned.
     getModule(x, y) {
       return 0 <= x && x < this.size && 0 <= y && y < this.size && this.modules[y][x];
+    }
+    // Function patterns must remain intact when styling the data modules.
+    isFunctionModule(x, y) {
+      return 0 <= x && x < this.size && 0 <= y && y < this.size && this.isFunction[y][x];
     }
     /*-- Private helper methods for constructor: Drawing function modules --*/
     // Reads this object's version field, and draws and marks all function modules.
@@ -973,9 +976,12 @@ function toBase64(str) {
 async function generateQR(text, options = {}) {
   const {
     type = "dataUrl",
+    style = "classic",
+    gradient,
+    logo,
     width = 200,
     margin = 4,
-    errorCorrectionLevel = "M",
+    errorCorrectionLevel = style === "logo" ? "H" : "M",
     color = { dark: "#000000", light: "#ffffff" }
   } = options || {};
   if (typeof text !== "string" || text.length === 0) {
@@ -993,8 +999,14 @@ async function generateQR(text, options = {}) {
   if (type !== "svg" && type !== "dataUrl") {
     throw new Error('Invalid output type: must be "svg" or "dataUrl"');
   }
-  if (errorCorrectionLevel && !["L", "M", "Q", "H"].includes(errorCorrectionLevel)) {
+  if (!["classic", "rounded", "gradient", "logo", "minimal"].includes(style)) {
+    throw new Error('Invalid QR style: must be "classic", "rounded", "gradient", "logo", or "minimal"');
+  }
+  if (!["L", "M", "Q", "H"].includes(errorCorrectionLevel)) {
     throw new Error('Invalid errorCorrectionLevel: must be "L", "M", "Q", or "H"');
+  }
+  if (style === "logo" && errorCorrectionLevel !== "H") {
+    throw new Error('Logo QR codes require errorCorrectionLevel "H"');
   }
   const darkColor = color && color.dark != null ? color.dark : "#000000";
   const lightColor = color && color.light != null ? color.light : "#ffffff";
@@ -1004,6 +1016,30 @@ async function generateQR(text, options = {}) {
   if (!isValidColor(lightColor)) {
     throw new Error(`Invalid light color: "${lightColor}" is not a valid CSS color`);
   }
+  const gradientStart = gradient?.start ?? "#4338ca";
+  const gradientEnd = gradient?.end ?? "#0f766e";
+  const gradientAngle = gradient?.angle ?? 45;
+  if (style === "gradient") {
+    if (!isValidColor(gradientStart) || !isValidColor(gradientEnd)) {
+      throw new Error("Invalid gradient color: start and end must be valid CSS colors");
+    }
+    if (typeof gradientAngle !== "number" || !Number.isFinite(gradientAngle) || gradientAngle < 0 || gradientAngle > 360) {
+      throw new Error("Gradient angle must be a valid number between 0 and 360");
+    }
+  }
+  const logoSize = logo?.size ?? 0.18;
+  const logoPadding = logo?.padding ?? 0.5;
+  if (style === "logo") {
+    if (!logo || !isValidLogoSource(logo.src)) {
+      throw new Error("Logo src must be an HTTPS image URL or a base64 PNG, JPEG, or WebP data URL");
+    }
+    if (typeof logoSize !== "number" || !Number.isFinite(logoSize) || logoSize < 0.1 || logoSize > 0.2) {
+      throw new Error("Logo size must be a valid number between 0.1 and 0.2");
+    }
+    if (typeof logoPadding !== "number" || !Number.isFinite(logoPadding) || logoPadding < 0 || logoPadding > 1) {
+      throw new Error("Logo padding must be a valid number between 0 and 1");
+    }
+  }
   let ecl = qrcodegen.QrCode.Ecc.MEDIUM;
   if (errorCorrectionLevel === "L") ecl = qrcodegen.QrCode.Ecc.LOW;
   if (errorCorrectionLevel === "Q") ecl = qrcodegen.QrCode.Ecc.QUARTILE;
@@ -1012,22 +1048,61 @@ async function generateQR(text, options = {}) {
   const size = qr.size;
   const safeMargin = Math.floor(margin);
   const viewBox = size + safeMargin * 2;
+  let gradientHash = 2166136261;
+  for (const char of JSON.stringify([gradientStart, gradientEnd, gradientAngle, size, safeMargin])) {
+    gradientHash = Math.imul(gradientHash ^ char.charCodeAt(0), 16777619);
+  }
+  const gradientId = `qr-gradient-${(gradientHash >>> 0).toString(16)}`;
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${width}" viewBox="0 0 ${viewBox} ${viewBox}">`;
   svg += `<rect width="100%" height="100%" fill="${lightColor}" />`;
+  if (style === "gradient") {
+    const radians = gradientAngle * Math.PI / 180;
+    const dx = Math.cos(radians) / 2;
+    const dy = Math.sin(radians) / 2;
+    svg += `<defs><linearGradient id="${gradientId}" gradientUnits="userSpaceOnUse" x1="${safeMargin + size * (0.5 - dx)}" y1="${safeMargin + size * (0.5 - dy)}" x2="${safeMargin + size * (0.5 + dx)}" y2="${safeMargin + size * (0.5 + dy)}"><stop offset="0%" stop-color="${gradientStart}" /><stop offset="100%" stop-color="${gradientEnd}" /></linearGradient></defs>`;
+  }
   let pathData = "";
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       if (qr.getModule(x, y)) {
-        pathData += `M${x + safeMargin},${y + safeMargin} h1 v1 h-1 z `;
+        const px = x + safeMargin;
+        const py = y + safeMargin;
+        const functionModule = qr.isFunctionModule(x, y);
+        if (style === "rounded" && !functionModule) {
+          pathData += `M${px + 0.22},${py} h0.56 q0.22,0 0.22,0.22 v0.56 q0,0.22 -0.22,0.22 h-0.56 q-0.22,0 -0.22,-0.22 v-0.56 q0,-0.22 0.22,-0.22 z `;
+        } else if (style === "minimal" && !functionModule) {
+          pathData += `M${px + 0.5},${py + 0.05} a0.45,0.45 0 1,0 0,0.9 a0.45,0.45 0 1,0 0,-0.9 z `;
+        } else {
+          pathData += `M${px},${py} h1 v1 h-1 z `;
+        }
       }
     }
   }
-  svg += `<path d="${pathData}" fill="${darkColor}" />`;
+  svg += `<path d="${pathData}" fill="${style === "gradient" ? `url(#${gradientId})` : darkColor}" />`;
+  if (style === "logo" && logo) {
+    const imageSize = size * logoSize;
+    const position = safeMargin + (size - imageSize) / 2;
+    svg += `<rect x="${position - logoPadding}" y="${position - logoPadding}" width="${imageSize + logoPadding * 2}" height="${imageSize + logoPadding * 2}" rx="0.5" fill="${lightColor}" />`;
+    svg += `<image href="${escapeXml(logo.src)}" x="${position}" y="${position}" width="${imageSize}" height="${imageSize}" preserveAspectRatio="xMidYMid meet" />`;
+  }
   svg += `</svg>`;
   if (type === "svg") {
     return svg;
   } else {
     return `data:image/svg+xml;base64,${toBase64(svg)}`;
+  }
+}
+function isValidLogoSource(src) {
+  if (typeof src !== "string" || src.length > 2e6) return false;
+  if (/^data:image\/(?:png|jpeg|webp);base64,(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(src)) {
+    return src.indexOf(",") < src.length - 1;
+  }
+  if (!src.startsWith("https://") || /[\s<>"'\\]/.test(src)) return false;
+  try {
+    const url = new URL(src);
+    return url.protocol === "https:" && !!url.hostname && !url.username && !url.password;
+  } catch {
+    return false;
   }
 }
 

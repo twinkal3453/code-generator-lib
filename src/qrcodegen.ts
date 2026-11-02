@@ -162,7 +162,7 @@ export namespace qrcodegen {
 		// Immutable after constructor finishes. Accessed through getModule().
 		private readonly modules   : Array<Array<boolean>> = [];
 		
-		// Indicates function modules that are not subjected to masking. Discarded when constructor finishes.
+		// Indicates function modules, retained so styled renderers can preserve detection patterns.
 		private readonly isFunction: Array<Array<boolean>> = [];
 		
 		
@@ -224,7 +224,6 @@ export namespace qrcodegen {
 			this.applyMask(msk);  // Apply the final choice of mask
 			this.drawFormatBits(msk);  // Overwrite old format bits
 			
-			this.isFunction = [];
 		}
 		
 		
@@ -235,6 +234,11 @@ export namespace qrcodegen {
 		// If the given coordinates are out of bounds, then false (light) is returned.
 		public getModule(x: int, y: int): boolean {
 			return 0 <= x && x < this.size && 0 <= y && y < this.size && this.modules[y][x];
+		}
+
+		// Function patterns must remain intact when styling the data modules.
+		public isFunctionModule(x: int, y: int): boolean {
+			return 0 <= x && x < this.size && 0 <= y && y < this.size && this.isFunction[y][x];
 		}
 		
 		
@@ -918,7 +922,7 @@ export namespace qrcodegen {
 
 /*---- Public helper enumeration ----*/
 
-namespace qrcodegen.QrCode {
+export namespace qrcodegen.QrCode {
 	
 	type int = number;
 	
@@ -951,7 +955,7 @@ namespace qrcodegen.QrCode {
 
 /*---- Public helper enumeration ----*/
 
-namespace qrcodegen.QrSegment {
+export namespace qrcodegen.QrSegment {
 	
 	type int = number;
 	

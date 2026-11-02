@@ -14,6 +14,7 @@ export declare namespace qrcodegen {
         private readonly isFunction;
         constructor(version: int, errorCorrectionLevel: QrCode.Ecc, dataCodewords: Readonly<Array<byte>>, msk: int);
         getModule(x: int, y: int): boolean;
+        isFunctionModule(x: int, y: int): boolean;
         private drawFunctionPatterns;
         private drawFormatBits;
         private drawVersion;
@@ -60,6 +61,34 @@ export declare namespace qrcodegen {
         private static readonly NUMERIC_REGEX;
         private static readonly ALPHANUMERIC_REGEX;
         private static readonly ALPHANUMERIC_CHARSET;
+    }
+    export {};
+}
+export declare namespace qrcodegen.QrCode {
+    type int = number;
+    export class Ecc {
+        readonly ordinal: int;
+        readonly formatBits: int;
+        static readonly LOW: Ecc;
+        static readonly MEDIUM: Ecc;
+        static readonly QUARTILE: Ecc;
+        static readonly HIGH: Ecc;
+        private constructor();
+    }
+    export {};
+}
+export declare namespace qrcodegen.QrSegment {
+    type int = number;
+    export class Mode {
+        readonly modeBits: int;
+        private readonly numBitsCharCount;
+        static readonly NUMERIC: Mode;
+        static readonly ALPHANUMERIC: Mode;
+        static readonly BYTE: Mode;
+        static readonly KANJI: Mode;
+        static readonly ECI: Mode;
+        private constructor();
+        numCharCountBits(ver: int): int;
     }
     export {};
 }

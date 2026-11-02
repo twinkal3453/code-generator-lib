@@ -98,6 +98,55 @@ export function QRCodeComponent({ url }: { url: string }) {
 }
 ```
 
+### QR styles
+
+Choose `classic` (the default), `rounded`, `gradient`, `logo`, or `minimal` using `options.style`.
+All styles support both SVG strings and Base64 SVG data URLs, with no runtime dependencies.
+
+```typescript
+// Rounded modules with square finder patterns.
+const rounded = await generateQR('https://example.com', {
+  style: 'rounded',
+  type: 'svg'
+});
+
+// A diagonal gradient across the QR grid.
+const gradient = await generateQR('https://example.com', {
+  style: 'gradient',
+  gradient: { start: '#4338ca', end: '#0f766e', angle: 45 }
+});
+
+// A centered logo. Use your own PNG, JPEG, or WebP image data URL.
+const logo = await generateQR('https://example.com', {
+  style: 'logo',
+  logo: { src: logoDataUrl, size: 0.18, padding: 0.5 }
+});
+
+// Circular modules with square finder patterns and the standard quiet zone.
+const minimal = await generateQR('https://example.com', {
+  style: 'minimal',
+  color: { dark: '#1e293b', light: '#ffffff' }
+});
+```
+
+Gradient defaults are `#4338ca` → `#0f766e` at 45°. Angles range from 0 to 360:
+0° runs left to right and 90° runs top to bottom. Gradient colors replace `color.dark`;
+`color.light` still controls the background.
+
+Logo QR codes default to error correction `H` and require `H` if you set the level explicitly.
+`logo.src` accepts an HTTPS image URL or a Base64 PNG/JPEG/WebP data URL. The library
+does not fetch remote images; embedding image data makes the result self-contained.
+Remote images may not display when the resulting SVG is used as an `<img>` source.
+Logo size ranges from 0.1 to 0.2 of the QR grid width; padding ranges from 0 to 1 module.
+
+Use dark foreground colors on a light, opaque background and keep the default four-module
+margin for reliable scanning. Check your final design with a scanner, especially when
+using custom colors, small output sizes, or logos.
+
+Run `npm run build` and `node demo.mjs` to generate `qr-styles-demo.svg`, a side-by-side
+preview of all five styles. For longer payloads, increase `width` (for example, to 600)
+to leave enough pixels per module.
+
 ---
 
 ### 2. Generating Barcodes (`generateBarcode`)
@@ -146,9 +195,16 @@ app.get('/api/barcode', async (req, res) => {
 | :--- | :--- | :--- | :--- |
 | `text` | `string` | **Required** | Text, URL, or data payload to encode into the QR code. |
 | `options.type` | `'dataUrl' \| 'svg'` | `'dataUrl'` | `'dataUrl'` returns Base64 Data URI, `'svg'` returns raw SVG string. |
+| `options.style` | `'classic' \| 'rounded' \| 'gradient' \| 'logo' \| 'minimal'` | `'classic'` | QR appearance. |
+| `options.gradient.start` | `string` | `'#4338ca'` | Starting color for the gradient style. |
+| `options.gradient.end` | `string` | `'#0f766e'` | Ending color for the gradient style. |
+| `options.gradient.angle` | `number` | `45` | Gradient direction in degrees, from 0 to 360. |
+| `options.logo.src` | `string` | Required for logo style | HTTPS URL or Base64 PNG/JPEG/WebP data URL. |
+| `options.logo.size` | `number` | `0.18` | Logo width relative to the QR grid, from 0.1 to 0.2. |
+| `options.logo.padding` | `number` | `0.5` | Padding around the logo in modules, from 0 to 1. |
 | `options.width` | `number` | `200` | Width and height dimension in pixels. |
 | `options.margin` | `number` | `4` | Quiet zone margin blocks around the QR code. |
-| `options.errorCorrectionLevel` | `'L' \| 'M' \| 'Q' \| 'H'` | `'M'` | Error correction recovery level (`L` ~7%, `M` ~15%, `Q` ~25%, `H` ~30%). |
+| `options.errorCorrectionLevel` | `'L' \| 'M' \| 'Q' \| 'H'` | `'M'` (`'H'` for logo) | Error correction recovery level (`L` ~7%, `M` ~15%, `Q` ~25%, `H` ~30%). Logo style requires `'H'`. |
 | `options.color.dark` | `string` | `'#000000'` | Hex/RGB color string for the dark blocks. |
 | `options.color.light` | `string` | `'#ffffff'` | Hex/RGB color string for the background. |
 

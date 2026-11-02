@@ -61,7 +61,9 @@
   },
   "homepage": "https://github.com/twinkal3453/code-generator-lib#readme",
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^26.1.2",
+    "jsqr": "^1.4.0",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
